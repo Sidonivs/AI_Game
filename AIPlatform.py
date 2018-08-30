@@ -1,15 +1,18 @@
 import sys
 import json
 import os
-import secrets
+import secrets #similar to random
 import time
+
+#this is the original code, working on improvements
+#new comments added
 
 class Ai:
     def __init__(self, name, firstData = {}):
         self.name = str(name)
         self.firstData = firstData
 
-    def writeMem(self, newMem):#save memory
+    def writeMem(self, newMem): #save memory
         try:
             os.mkdir("AIs")
         except FileExistsError:
@@ -17,7 +20,7 @@ class Ai:
         with open("AIs/" + self.name + "_memory.json", "w") as mem:
             json.dump(newMem, mem)
 
-    def readMem(self):#load memory
+    def readMem(self): #load memory
         try:
             with open("AIs/" + self.name + "_memory.json", "r") as mem:
                 loadedMem = json.load(mem)
@@ -27,14 +30,14 @@ class Ai:
             return self.readMem()
         return loadedMem
 
-    def learn(self, obj = ""):#save input to memory
+    def learn(self, obj = ""): #save input to memory
         loadedMem = self.readMem()
         if obj == "":
             print("(By the way, I can also learn from another AI, " +
             "just write it's name.)")
             obj = input("Name of the object: ")
 
-        if obj in human.loadedUser["ais"]:#learn from other AI
+        if obj in human.loadedUser["ais"]: #learn from other AI
             aiCode = human.loadedUser["ais"][obj]
             aiMem = globals()[aiCode].readMem()
             aiKeys = list(aiMem.keys())
@@ -44,7 +47,7 @@ class Ai:
             self.writeMem(loadedMem)
             return
 
-        if obj in loadedMem:#already in memory
+        if obj in loadedMem: #already in memory
             decide = input("According to my memory " + obj + " is " +
             str(loadedMem[obj]) + ".\nDo you want me to keep, " +
             "overwrite or forget it? [keep/overwrite/forget]\n")
@@ -65,7 +68,7 @@ class Ai:
         loadedMem[obj] = information
         self.writeMem(loadedMem)
 
-    def recall(self):#load and print from memory
+    def recall(self): #load and print from memory
         loadedMem = self.readMem()
         print('To print my entire memory input "print memory".')
         request = input("Name of the object: ")
@@ -83,7 +86,7 @@ class Ai:
             print("No such object in memory. Could you describe it for me?")
             self.learn(request)
 
-    def speak(self):#load and print randomly from memory
+    def speak(self): #load and print randomly from memory
         loadedMem = self.readMem()
         try:
             chosenKey = secrets.choice(list(loadedMem.keys()))
@@ -92,7 +95,7 @@ class Ai:
         else:
             print(chosenKey + " is " + loadedMem[chosenKey])
 
-    def wait(self):#do nothing for x seconds
+    def wait(self): #do nothing for x seconds
         howLong = float(input("How long should I wait?\n"))
         if howLong > 99:
             confirm = input("That is very long, are you sure? [y/n]\n")
@@ -103,7 +106,7 @@ class Ai:
     def deleteMem(self):
         print("DELETING MEMORY...")
         try:
-            os.remove("AIs/" + aiName + "Memory.json")
+            os.remove("AIs/" + aiName + "Memory.json") #maybe full path is required, didn't have time to check that
             print("Nooo, my knowledge is lost forever :(.")
         except FileNotFoundError:
             pass
@@ -163,7 +166,7 @@ class User:
         else:
             self.recreateAis()
 
-    def createAis(self):#create new AIs
+    def createAis(self): #create new AIs
         while True:
             try:
                 numOfAis = int(input("How many AIs do you want?\n"))
@@ -185,7 +188,7 @@ class User:
 
         for i in range(numOfAis):
             newName = input("Name your AI (No. " + str(i+1) + "): ")
-            if newName == "default":
+            if newName == "default": #default names (useful for testing)
                 for i in range(numOfAis):
                     globals()[self.userName + "_ai" +
                     str(self.loadedUser["creations"]) + "-" +
@@ -206,7 +209,7 @@ class User:
         for i in range(self.loadedUser["numOfAis"]):
             globals()[self.loadedUser["ais"][names[i]]] = Ai(names[i])
 
-    def destroyAi(self, ai):
+    def destroyAi(self, ai): #newest and weirdest function... not working properly
         print("DESTROYING AI...")
         ai.deleteMem()
         globals()[self.loadedUser["ais"][ai.name]] = None
@@ -244,7 +247,7 @@ while True:
         currentAi = globals()[human.loadedUser["ais"][aiName]]
         command = input("What should I do? [Current AI: " + currentAi.name + "]\n")
 
-    if command == "whatever":
+    if command == "whatever": #choose a random command
         command = secrets.choice(human.commands)
 
     if command == "learn":
