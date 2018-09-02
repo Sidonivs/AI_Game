@@ -38,8 +38,7 @@ class Ai:
             obj = input("Name of the object: ")
 
         if obj in human.loadedUser["ais"]: #learn from other AI
-            aiCode = human.loadedUser["ais"][obj]
-            aiMem = globals()[aiCode].readMem()
+            aiMem = self.instancesOfAis[obj].readMem()
             aiKeys = list(aiMem.keys())
             for i in aiKeys:
                 if i not in loadedMem:
@@ -106,7 +105,8 @@ class Ai:
     def deleteMem(self):
         print("DELETING MEMORY...")
         try:
-            os.remove("AIs/" + aiName + "Memory.json") #maybe full path is required, didn't have time to check that
+            path = os.path.join("AIs", aiName + "_memory.json")
+            os.remove(path)
             print("Nooo, my knowledge is lost forever :(.")
         except FileNotFoundError:
             pass
@@ -115,6 +115,7 @@ class User:
     def __init__(self):
         self.userName = ''
         self.password = ''
+        self.instancesOfAis = {}
         self.logIn()
         self.loadedUser = {self.userName: self.password, "creations": 0, "numOfAis": 0}
         self.findUser()
@@ -132,7 +133,7 @@ class User:
 
         print("====================")
         print("Available AIs:")
-        print(list(self.loadedUser["ais"].keys()))
+        print(self.loadedUser["ais"])
         self.commands = ["learn", "recall", "speak", "wait", "create",
         "destroy", "quit", "whatever"]
         print("--------------------")
@@ -141,7 +142,7 @@ class User:
         print("--------------------")
 
     def logIn(self):
-        print("--------------------")
+        print("\n--------------------")
         self.userName = input("Username: ")
         self.password = input("Password: ")
         if "quit" in [self.userName, self.password]:
@@ -177,49 +178,43 @@ class User:
 
         if not numOfAis:
             inp = input('You have no available AIs at the moment.\n' +
-            'Type "create" to create new AIs or anything else to exit.')
+            'Type "create" to create new AIs or anything else to exit.\n')
             if inp == "create":
                 self.createAis()
             else:
                 sys.exit()
 
-        ais = {}
+        ais = []
         defaultNames = ["Louie", "Arooj", "Avani"]
 
         for i in range(numOfAis):
             newName = input("Name your AI (No. " + str(i+1) + "): ")
             if newName == "default": #default names (useful for testing)
                 for i in range(numOfAis):
-                    globals()[self.userName + "_ai" +
-                    str(self.loadedUser["creations"]) + "-" +
-                    str(i+1)] = Ai(defaultNames[i])
-                    ais[defaultNames[i]] = self.userName + "_ai" + str(self.loadedUser["creations"]) + "-" + str(i+1)
+                    self.instancesOfAis[defaultNames[i]] = Ai(defaultNames[i])
                 break
-            globals()[self.userName + "_ai" + str(self.loadedUser["creations"])
-            + "-" + str(i+1)] = Ai(newName)
-            ais[newName] = self.userName + "_ai" + str(self.loadedUser["creations"]) + "-" + str(i+1)
+            self.instancesOfAis[newName] = Ai(newName)
 
-        self.loadedUser["numOfAis"] += numOfAis
+        ais = list(self.instancesOfAis.keys())
         self.loadedUser["ais"] = ais
-        self.loadedUser["creations"] += 1
         self.saveUser()
 
     def recreateAis(self):
-        names = list(self.loadedUser["ais"].keys())
-        for i in range(self.loadedUser["numOfAis"]):
-            globals()[self.loadedUser["ais"][names[i]]] = Ai(names[i])
+        for name in self.loadedUser["ais"]:
+            self.instancesOfAis[name] = Ai(name)
 
     def destroyAi(self, ai): #newest and weirdest function... not working properly
         print("DESTROYING AI...")
         ai.deleteMem()
-        globals()[self.loadedUser["ais"][ai.name]] = None
+        del self.instancesOfAis[ai.name]
         del self.loadedUser["ais"][ai.name]
         self.loadedUser["numOfAis"] -= 1
         self.saveUser()
 
-        otherAis = list(human.loadedUser["ais"].keys())
+        otherAis = self.loadedUser["ais"]
         if otherAis != []:
-            return globals()[human.loadedUser["ais"][secrets.choice(otherAis)]]
+            newAi = self.loadedUser["ais"][secrets.choice(otherAis)]
+            return self.instancesOfAis[newAi]
         else:
             inp = input('You have no available AIs at the moment.\n' +
             'Type "create" to create new AIs or anything else to exit.')
@@ -231,9 +226,20 @@ class User:
 human = User()
 
 while True:
+    if human.loadedUser["ais"] == []:
+        inp = input('You have no available AIs at the moment.\n' +
+        'Type "create" to create new AIs or anything else to exit.')
+        if inp == "create":
+            human.createAis()
+        else:
+            sys.exit()
+
     aiName = input("AI's name: ")
-    if aiName in human.loadedUser["ais"]:
-        currentAi = globals()[human.loadedUser["ais"][aiName]]
+
+    if aiName == "quit":
+        sys.exit()
+    elif aiName in human.loadedUser["ais"]:
+        currentAi = human.instancesOfAis[aiName]
         print("(Write a different AI's name to switch between them.)")
         break
     else:
@@ -244,7 +250,7 @@ while True:
 
     while command in human.loadedUser["ais"]:
         aiName = command
-        currentAi = globals()[human.loadedUser["ais"][aiName]]
+        currentAi = human.instancesOfAis[aiName]
         command = input("What should I do? [Current AI: " + currentAi.name + "]\n")
 
     if command == "whatever": #choose a random command
